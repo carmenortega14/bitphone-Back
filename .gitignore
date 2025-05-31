@@ -1,0 +1,6 @@
+.env
+config.json
+node_modules
+app_core/models/
+.vscode/launch.json
+docs/
