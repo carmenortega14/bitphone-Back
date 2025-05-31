@@ -1,0 +1,64 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: node_api
+    ports:
+      - "3000:3000"  # Puerto típico de Node.js
+      - "9229:9229" # Puerto para depuración
+    volumes:
+      - .:/usr/src/app
+      - /usr/src/app/node_modules  # Para evitar sobrescribir node_modules
+    networks:
+      - node-net
+    depends_on:
+      - postgres
+    environment:
+      NODE_ENV: development
+      DB_HOST: postgres
+      DB_USER: udenar
+      DB_PASSWORD: 1234
+      DB_NAME: bitphonedb
+      DATABASE_URL: "postgresql://udenar:1234@postgres:5432/bitphonedb?schema=public" # COMENTAR
+
+  postgres:
+    image: postgres
+    container_name: postgres_container
+    restart: always
+    environment:
+      POSTGRES_USER: udenar
+      POSTGRES_PASSWORD: 1234
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./init-multiple-dbs.sql:/docker-entrypoint-initdb.d/init-multiple-dbs.sql
+    networks:
+      -  node-net
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.2.0
+    command: start-dev
+    container_name: keycloak_container
+    environment:
+      KC_DB: postgres
+      KC_DB_URL_HOST: postgres
+      KC_DB_URL_DATABASE: keycloak_db
+      KC_DB_USERNAME: udenar
+      KC_DB_PASSWORD: 1234
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+    ports:
+      - "8081:8080"
+    depends_on:
+      - postgres
+    networks:
+      - node-net
+
+volumes:
+  pgdata:
+
+networks:
+  node-net:
+    driver: bridge
