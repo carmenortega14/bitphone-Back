@@ -3,7 +3,41 @@ const express = require('express');
 const cors = require('cors');
 const { Pool } = require('pg');
 const { PrismaClient } = require('@prisma/client')
-const prisma = new PrismaClient()
+const prisma = new PrismaClient();
+const { 
+  createMarca, 
+  getAllMarcas, 
+  getMarcaById, 
+  updateMarca 
+} = require('./src/app/controllers/marcaController');
+
+const { 
+  createCelular, 
+  getAllCelulares, 
+  getCelularById, 
+  updateCelular 
+} = require('./src/app/controllers/celularController');
+
+const { 
+  createCategoria, 
+  getAllCategorias, 
+  getCategoriaById, 
+  updateCategoria 
+} = require('./src/app/controllers/categoriaController');
+
+const { 
+  createCliente, 
+  getAllClientes, 
+  getClienteById, 
+  updateCliente 
+} = require('./src/app/controllers/clienteController');
+
+const { 
+  createPedido, 
+  getAllPedidos, 
+  getPedidoById, 
+  updatePedido 
+} = require('./src/app/controllers/pedidoController');
 
 
 const app = express();
@@ -46,19 +80,40 @@ app.get('/', (req, res) => {
   });
 });
 
+// Marcas
+app.post('/marcas', createMarca);
+app.get('/marcas', getAllMarcas);
+app.get('/marcas/:id', getMarcaById);
+app.put('/marcas/:id', updateMarca);
+
+// Celulares
+app.post('/celulares', createCelular);
+app.get('/celulares', getAllCelulares);
+app.get('/celulares/:id', getCelularById);
+app.put('/celulares/:id', updateCelular);
+
+// Categorias
+app.post('/categorias', createCategoria);
+app.get('/categorias', getAllCategorias);
+app.get('/categorias/:id', getCategoriaById);
+app.put('/categorias/:id', updateCategoria);
+
+// Clientes
+app.post('/clientes', createCliente);
+app.get('/clientes', getAllClientes);
+app.get('/clientes/:id', getClienteById);
+app.put('/clientes/:id', updateCliente);
+
+// Pedidos
+app.post('/pedidos', createPedido);
+app.get('/pedidos', getAllPedidos);
+app.get('/pedidos/:id', getPedidoById);
+app.put('/pedidos/:id', updatePedido);
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Servidor corriendo en http://localhost:${PORT}`);
 });
-
-app.get('/celulares', async (req, res) => {
-  try {
-    const celulares = await prisma.celular.findMany()
-    res.json(celulares)
-  } catch (err) {
-    res.status(500).json({ error: err.message })
-  }
-})
 
 // const express = require('express');
 // const cors = require('cors');
