@@ -1,42 +1,47 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const path = require('path');
 const { Pool } = require('pg');
 const { PrismaClient } = require('@prisma/client')
 const prisma = new PrismaClient();
-const { 
-  createMarca, 
-  getAllMarcas, 
-  getMarcaById, 
-  updateMarca 
+const multer = require('multer');
+const { v4: uuidv4 } = require('uuid');
+
+const {
+  createMarca,
+  getAllMarcas,
+  getMarcaById,
+  updateMarca
 } = require('./src/app/controllers/marcaController');
 
-const { 
-  createCelular, 
-  getAllCelulares, 
-  getCelularById, 
-  updateCelular 
+const {
+  createCelular,
+  getAllCelulares,
+  getCelularById,
+  updateCelular,
+  updateCelularConImagen
 } = require('./src/app/controllers/celularController');
 
-const { 
-  createCategoria, 
-  getAllCategorias, 
-  getCategoriaById, 
-  updateCategoria 
+const {
+  createCategoria,
+  getAllCategorias,
+  getCategoriaById,
+  updateCategoria
 } = require('./src/app/controllers/categoriaController');
 
-const { 
-  createCliente, 
-  getAllClientes, 
-  getClienteById, 
-  updateCliente 
+const {
+  createCliente,
+  getAllClientes,
+  getClienteById,
+  updateCliente
 } = require('./src/app/controllers/clienteController');
 
-const { 
-  createPedido, 
-  getAllPedidos, 
-  getPedidoById, 
-  updatePedido 
+const {
+  createPedido,
+  getAllPedidos,
+  getPedidoById,
+  updatePedido
 } = require('./src/app/controllers/pedidoController');
 
 
@@ -80,6 +85,8 @@ app.get('/', (req, res) => {
   });
 });
 
+app.use('/uploads', express.static(path.join(__dirname, 'public', 'uploads')));
+
 // Marcas
 app.post('/marcas', createMarca);
 app.get('/marcas', getAllMarcas);
@@ -87,10 +94,66 @@ app.get('/marcas/:id', getMarcaById);
 app.put('/marcas/:id', updateMarca);
 
 // Celulares
+// Configuración de Multer para almacenar imágenes
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, 'public/uploads/');
+  },
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname);
+    cb(null, `${uuidv4()}${ext}`);
+  }
+});
+
+const upload = multer({
+  storage: storage,
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Solo se permiten imágenes'), false);
+    }
+  },
+  limits: {
+    fileSize: 5 * 1024 * 1024 // Límite de 5MB
+  }
+});
+
+// Ruta para crear celular con imagen
+app.post('/celulares', upload.single('imagen'), async (req, res) => {
+  try {
+    const { modelo, descripcion, precio, stock, color,
+      almacenamiento, ram, pantalla, sistemaOperativo, marcaId } = req.body;
+
+    // Ruta relativa de la imagen
+    const imagenUrl = req.file ? `/uploads/${req.file.filename}` : null;
+
+    const celular = await prisma.celular.create({
+      data: {
+        modelo,
+        descripcion,
+        precio: parseFloat(precio),
+        stock: parseInt(stock),
+        imagenUrl,
+        color,
+        almacenamiento: parseInt(almacenamiento),
+        ram: parseInt(ram),
+        pantalla: parseFloat(pantalla),
+        sistemaOperativo,
+        marcaId: parseInt(marcaId)
+      }
+    });
+
+    res.status(201).json(celular);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
 app.post('/celulares', createCelular);
 app.get('/celulares', getAllCelulares);
 app.get('/celulares/:id', getCelularById);
 app.put('/celulares/:id', updateCelular);
+app.put('/celulares/:id/con-imagen', upload.single('imagen'), updateCelularConImagen);
 
 // Categorias
 app.post('/categorias', createCategoria);
@@ -183,16 +246,16 @@ app.listen(PORT, () => {
 // app.get('/health', async (req, res) => {
 //   try {
 //     await mainPool.query('SELECT 1');
-//     res.json({ 
+//     res.json({
 //       status: 'OK',
 //       database: 'Conectado',
 //       keycloak: config.keycloak.baseUrl
 //     });
 //   } catch (err) {
-//     res.status(500).json({ 
+//     res.status(500).json({
 //       status: 'Error',
 //       database: 'No conectado',
-//       error: err.message 
+//       error: err.message
 //     });
 //   }
 // });
@@ -201,9 +264,9 @@ app.listen(PORT, () => {
 // app.use((err, req, res, next) => {
 //   if (config.app.debug) {
 //     console.error(err.stack);
-//     res.status(500).json({ 
+//     res.status(500).json({
 //       error: err.message,
-//       stack: err.stack 
+//       stack: err.stack
 //     });
 //   } else {
 //     res.status(500).send('Algo salió mal!');
