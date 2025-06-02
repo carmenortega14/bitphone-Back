@@ -4,3 +4,6 @@ node_modules
 app_core/models/
 .vscode/launch.json
 docs/
+/public/uploads/*
+!/public/uploads/.gitkeep
+/public/uploads/
