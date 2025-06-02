@@ -33,7 +33,7 @@ model Celular {
   marca       Marca     @relation(fields: [marcaId], references: [id])
   marcaId     Int
   categorias  Categoria[]
-  pedidos     ItemPedido[]  // Esta es la relación inversa que falta
+  pedidos     ItemPedido[]
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 }
