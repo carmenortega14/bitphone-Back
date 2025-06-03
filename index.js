@@ -41,7 +41,9 @@ const {
   createPedido,
   getAllPedidos,
   getPedidoById,
-  updatePedido
+  updatePedido,
+  getAllItemsPedido,
+  getItemPedidoById
 } = require('./src/app/controllers/pedidoController');
 
 
@@ -154,6 +156,21 @@ app.get('/celulares', getAllCelulares);
 app.get('/celulares/:id', getCelularById);
 app.put('/celulares/:id', updateCelular);
 app.put('/celulares/:id/con-imagen', upload.single('imagen'), updateCelularConImagen);
+app.patch('/celulares/:id/stock', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { stock } = req.body;
+
+    const celularActualizado = await prisma.celular.update({
+      where: { id: parseInt(id) },
+      data: { stock: parseInt(stock) }
+    });
+
+    res.json(celularActualizado);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
 
 // Categorias
 app.post('/categorias', createCategoria);
@@ -172,6 +189,8 @@ app.post('/pedidos', createPedido);
 app.get('/pedidos', getAllPedidos);
 app.get('/pedidos/:id', getPedidoById);
 app.put('/pedidos/:id', updatePedido);
+app.get('/getAllItemsPedido', getAllItemsPedido);
+app.get('/getItemPedidoById/:id', getItemPedidoById);
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
