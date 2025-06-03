@@ -64,7 +64,7 @@ model Pedido {
   clienteId   Int
   items       ItemPedido[]
   total       Float
-  estado      String    @default("pendiente")
+  estado      String    @default("Finalizado")
   fecha       DateTime  @default(now())
   direccionEnvio String
   metodoPago  String
