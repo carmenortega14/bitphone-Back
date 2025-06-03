@@ -7,6 +7,15 @@ const { PrismaClient } = require('@prisma/client')
 const prisma = new PrismaClient();
 const multer = require('multer');
 const { v4: uuidv4 } = require('uuid');
+const session = require('express-session');
+const config = require('./src/config');
+const Keycloak = require('keycloak-connect');
+
+const KeycloakAdminClient = require('keycloak-admin').default;
+const keycloakAdmin = new KeycloakAdminClient({
+  baseUrl: config.keycloak.baseUrl,
+  realmName: config.keycloak.realm,
+});
 
 const {
   createMarca,
@@ -76,15 +85,6 @@ app.get('/test-db', async (req, res) => {
       error: err.message
     });
   }
-});
-
-// Ruta básica
-app.get('/', (req, res) => {
-  res.json({
-    app: process.env.APP_NAME || 'node-api',
-    status: 'running',
-    environment: process.env.NODE_ENV || 'development'
-  });
 });
 
 app.use('/uploads', express.static(path.join(__dirname, 'public', 'uploads')));
@@ -191,6 +191,68 @@ app.get('/pedidos/:id', getPedidoById);
 app.put('/pedidos/:id', updatePedido);
 app.get('/getAllItemsPedido', getAllItemsPedido);
 app.get('/getItemPedidoById/:id', getItemPedidoById);
+
+// Inicializar Keycloak Admin Client
+async function initKeycloakAdmin() {
+  await keycloakAdmin.auth({
+    username: 'admin',
+    password: 'admin',
+    grantType: 'password',
+    clientId: 'bitphone-client',
+  });
+}
+
+// Configuración de sesión para Keycloak
+const memoryStore = new session.MemoryStore();
+app.use(session({
+  secret: config.app.name,
+  resave: false,
+  saveUninitialized: true,
+  store: memoryStore
+}));
+
+// Configuración de Keycloak
+const keycloak = new Keycloak({ store: memoryStore }, {
+  realm: config.keycloak.realm,
+  'auth-server-url': config.keycloak.baseUrl,
+  'ssl-required': 'external',
+  resource: config.keycloak.clientId,
+  'bearer-only': true,
+  'confidential-port': 0,
+  credentials: {
+    secret: config.keycloak.clientSecret
+  }
+});
+app.use(keycloak.middleware());
+
+// Ruta de prueba pública
+app.get('/test-key', (req, res) => {
+  res.send(`${config.app.name} funcionando en modo ${config.app.env}`);
+});
+
+// Ruta de prueba protegida con Keycloak
+app.get('/protected', keycloak.protect(), (req, res) => {
+  res.json({ message: 'Ruta protegida', user: req.kauth.grant.access_token.content });
+});
+
+
+// Ruta protegida para obtener usuarios
+app.get('/admin/users', keycloak.protect('admin'), async (req, res) => {
+  try {
+    await initKeycloakAdmin();
+    
+    // Obtener todos los usuarios
+    const users = await keycloakAdmin.users.find({
+      realm: config.keycloak.realm,
+      max: 1000 // Número máximo de usuarios a devolver
+    });
+
+    res.json(users);
+  } catch (error) {
+    console.error('Error fetching users:', error);
+    res.status(500).json({ error: 'Failed to fetch users' });
+  }
+});
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {

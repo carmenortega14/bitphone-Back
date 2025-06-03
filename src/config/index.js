@@ -34,8 +34,8 @@ module.exports = {
     clientId: process.env.KEYCLOAK_CLIENT_ID || 'node-api',
     clientSecret: process.env.KEYCLOAK_CLIENT_SECRET,
     redirectUri: process.env.KEYCLOAK_REDIRECT_URI,
-    baseUrl: process.env.KEYCLOAK_BASE_URL || 'http://keycloak:8080',
-    realm: process.env.KEYCLOAK_REALM || 'node-realm'
+    baseUrl: process.env.KEYCLOAK_BASE_URL || 'http://keycloak:8081',
+    realm: process.env.KEYCLOAK_REALM || 'bitphone'
   },
   auth: {
     bcryptRounds: parseInt(process.env.BCRYPT_ROUNDS) || 12
